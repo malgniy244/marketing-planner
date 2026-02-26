@@ -772,12 +772,12 @@ function renderIdeas() {
   list.innerHTML = '';
 
   // Group by phase
-  const phaseOrder = ['pre', 'on_show', 'post', 'recurring'];
-  const phaseLabels = { pre: 'Pre-Auction', on_show: 'On Show', post: 'Post-Auction', recurring: 'Recurring' };
+  const phaseOrder = ['pre_auction', 'on_show', 'post_auction', 'recurring'];
+  const phaseLabels = { pre_auction: 'Pre-Auction', on_show: 'On Show', post_auction: 'Post-Auction', recurring: 'Recurring' };
   const grouped = {};
   phaseOrder.forEach(p => { grouped[p] = []; });
   filtered.forEach(idea => {
-    const p = idea.phase || 'pre';
+    const p = idea.phase || 'pre_auction';
     if (!grouped[p]) grouped[p] = [];
     grouped[p].push(idea);
   });
@@ -798,7 +798,7 @@ function renderIdeas() {
         <span class="phase-group-count">${ideas.length}</span>
       </div>
       ${currentCycleId
-        ? `<button class="btn-add-all-phase" id="add-all-${phase}" onclick="addAllPhase('${phase}', this)" ${addable.length === 0 ? 'disabled' : ''} title="Add all ${phaseLabels[phase]} ideas to schedule">
+        ? `<button class="btn-add-all-phase" id="add-all-${phase}" onclick="addAllPhase('${phase}', this)" ${addable.length === 0 ? 'disabled' : ''} title="Add all ${phaseLabels[phase] || phase} ideas to schedule">
             + Add All (${addable.length})
            </button>`
         : ''
