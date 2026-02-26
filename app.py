@@ -443,6 +443,11 @@ def get_cycle_stats(cycle_id):
 def serve(path='index.html'):
     return send_from_directory('static', 'index.html')
 
+with app.app_context():
+    try:
+        init_db()
+    except Exception as e:
+        print(f'DB init error: {e}')
+
 if __name__ == '__main__':
-    init_db()
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
