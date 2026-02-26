@@ -307,6 +307,36 @@ def create_idea():
         conn.commit()
     return jsonify(result)
 
+@app.route('/api/ideas/<int:idea_id>', methods=['PATCH'])
+@require_auth
+def update_idea(idea_id):
+    data = request.get_json()
+    allowed = ['title', 'category', 'phase', 'description', 'is_recurring', 'times_done']
+    sets = []
+    vals = []
+    for key in allowed:
+        if key in data:
+            sets.append(f"{key} = %s")
+            vals.append(data[key])
+    if not sets:
+        return jsonify({'error': 'No fields to update'}), 400
+    vals.append(idea_id)
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"UPDATE ideas SET {', '.join(sets)} WHERE id = %s RETURNING *", vals)
+            result = cur.fetchone()
+        conn.commit()
+    return jsonify(result)
+
+@app.route('/api/ideas/<int:idea_id>', methods=['DELETE'])
+@require_auth
+def delete_idea(idea_id):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM ideas WHERE id = %s", (idea_id,))
+        conn.commit()
+    return jsonify({'ok': True})
+
 # ─── Cycle Tasks ───────────────────────────────────────────────────────────────
 @app.route('/api/cycles/<int:cycle_id>/tasks', methods=['GET'])
 @require_auth
@@ -377,6 +407,7 @@ def delete_task(task_id):
 def bulk_add_ideas(cycle_id):
     data = request.get_json()
     idea_ids = data.get('idea_ids', [])
+    override_phase = data.get('override_phase')  # optional: from drag-and-drop to specific phase zone
     added = []
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -388,10 +419,11 @@ def bulk_add_ideas(cycle_id):
                 cur.execute("SELECT * FROM ideas WHERE id=%s", (idea_id,))
                 idea = cur.fetchone()
                 if idea:
+                    phase = override_phase if override_phase else idea['phase']
                     cur.execute("""
                         INSERT INTO cycle_tasks (cycle_id, idea_id, title, category, phase, status, decision)
                         VALUES (%s, %s, %s, %s, %s, 'idea', 'undecided') RETURNING *
-                    """, (cycle_id, idea_id, idea['title'], idea['category'], idea['phase']))
+                    """, (cycle_id, idea_id, idea['title'], idea['category'], phase))
                     added.append(cur.fetchone())
         conn.commit()
     return jsonify(added)
@@ -437,17 +469,19 @@ def get_cycle_stats(cycle_id):
             """, (cycle_id,))
             return jsonify(cur.fetchone())
 
-# ─── Serve frontend ────────────────────────────────────────────────────────────
-@app.route('/')
-@app.route('/<path:path>')
-def serve(path='index.html'):
-    return send_from_directory('static', 'index.html')
-
+# ─── Initialize DB on startup (runs when gunicorn imports the module) ──────────
 with app.app_context():
     try:
         init_db()
     except Exception as e:
         print(f'DB init error: {e}')
 
+# ─── Serve frontend ────────────────────────────────────────────────────────────
+@app.route('/')
+@app.route('/<path:path>')
+def serve(path='index.html'):
+    return send_from_directory('static', 'index.html')
+
 if __name__ == '__main__':
+    init_db()
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
