@@ -156,10 +156,30 @@ body::before {
 .ideas-list::-webkit-scrollbar-thumb { background: var(--border2); }
 
 /* Drag hint */
-.drag-hint {
-  font-size: 0.52rem; color: var(--muted2); letter-spacing: 0.08em;
-  text-align: center; padding: 6px 0 2px; border-bottom: 1px solid var(--border);
+.drag-hint { font-size: 0.58rem; color: var(--muted2); letter-spacing: 0.08em; padding: 8px 16px 4px; }
+
+/* ── PHASE GROUP HEADERS ── */
+.phase-group-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px 6px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
 }
+.phase-group-header:first-child { border-top: none; margin-top: 0; }
+.phase-group-label {
+  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold); font-weight: 400;
+}
+.phase-group-count { font-size: 0.55rem; color: var(--muted2); margin-left: 6px; }
+.btn-add-all-phase {
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--muted); font-family: 'DM Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 4px 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn-add-all-phase:hover { border-color: var(--gold); color: var(--gold); }
+.btn-add-all-phase:disabled { opacity: 0.35; cursor: default; }
+.btn-add-all-phase.loading { opacity: 0.6; pointer-events: none; }
 
 .idea-item {
   padding: 10px 20px;
@@ -750,41 +770,77 @@ function renderIdeas() {
   document.getElementById('ideas-count').textContent = filtered.length;
   const list = document.getElementById('ideas-list');
   list.innerHTML = '';
+
+  // Group by phase
+  const phaseOrder = ['pre', 'on_show', 'post', 'recurring'];
+  const phaseLabels = { pre: 'Pre-Auction', on_show: 'On Show', post: 'Post-Auction', recurring: 'Recurring' };
+  const grouped = {};
+  phaseOrder.forEach(p => { grouped[p] = []; });
   filtered.forEach(idea => {
-    const inCycle = cycleTaskIdeaIds.has(idea.id);
-    const crossed = crossedOutIds.has(idea.id);
-    const div = document.createElement('div');
-    div.className = 'idea-item' + (inCycle ? ' in-cycle' : '') + (crossed && !inCycle ? ' crossed-out' : '');
-    div.dataset.ideaId = idea.id;
-    div.dataset.ideaTitle = idea.title;
-    div.dataset.ideaCategory = idea.category;
-    div.dataset.ideaPhase = idea.phase;
+    const p = idea.phase || 'pre';
+    if (!grouped[p]) grouped[p] = [];
+    grouped[p].push(idea);
+  });
 
-    // Drag events (only if not in cycle)
-    if (!inCycle) {
-      div.draggable = true;
-      div.addEventListener('dragstart', onIdeaDragStart);
-      div.addEventListener('dragend', onIdeaDragEnd);
-    }
+  phaseOrder.forEach(phase => {
+    const ideas = grouped[phase];
+    if (!ideas || ideas.length === 0) return;
 
-    div.innerHTML = `
-      <div class="idea-title">${idea.title}</div>
-      <div class="idea-meta">
-        <span class="tag tag-${idea.category}">${formatCategory(idea.category)}</span>
-        <span class="tag tag-${idea.phase}">${formatPhase(idea.phase)}</span>
-        ${idea.times_done > 0 ? `<span class="done-badge">done ${idea.times_done}×</span>` : ''}
-        ${idea.is_recurring ? '<span class="done-badge">↻ recurring</span>' : ''}
+    // Count how many are addable (not in cycle, not crossed out)
+    const addable = ideas.filter(i => !cycleTaskIdeaIds.has(i.id) && !crossedOutIds.has(i.id));
+
+    // Phase group header
+    const header = document.createElement('div');
+    header.className = 'phase-group-header';
+    header.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="phase-group-label">${phaseLabels[phase] || phase}</span>
+        <span class="phase-group-count">${ideas.length}</span>
       </div>
-      ${inCycle
-        ? '<span class="in-cycle-badge">✓ in cycle</span>'
-        : `<div class="idea-actions">
-            <button class="idea-action-btn add" onclick="addIdeaToCycle(${idea.id}, event)" title="Add to schedule">+</button>
-            <button class="idea-action-btn cross" onclick="toggleCrossOut(${idea.id}, event)" title="${crossed ? 'Restore' : 'Cross out'}">${crossed ? '↩' : '✕'}</button>
-            <button class="idea-action-btn del" onclick="deleteIdea(${idea.id}, event)" title="Delete from bank">🗑</button>
-          </div>`
+      ${currentCycleId
+        ? `<button class="btn-add-all-phase" id="add-all-${phase}" onclick="addAllPhase('${phase}', this)" ${addable.length === 0 ? 'disabled' : ''} title="Add all ${phaseLabels[phase]} ideas to schedule">
+            + Add All (${addable.length})
+           </button>`
+        : ''
       }
     `;
-    list.appendChild(div);
+    list.appendChild(header);
+
+    ideas.forEach(idea => {
+      const inCycle = cycleTaskIdeaIds.has(idea.id);
+      const crossed = crossedOutIds.has(idea.id);
+      const div = document.createElement('div');
+      div.className = 'idea-item' + (inCycle ? ' in-cycle' : '') + (crossed && !inCycle ? ' crossed-out' : '');
+      div.dataset.ideaId = idea.id;
+      div.dataset.ideaTitle = idea.title;
+      div.dataset.ideaCategory = idea.category;
+      div.dataset.ideaPhase = idea.phase;
+
+      if (!inCycle) {
+        div.draggable = true;
+        div.addEventListener('dragstart', onIdeaDragStart);
+        div.addEventListener('dragend', onIdeaDragEnd);
+      }
+
+      div.innerHTML = `
+        <div class="idea-title">${idea.title}</div>
+        <div class="idea-meta">
+          <span class="tag tag-${idea.category}">${formatCategory(idea.category)}</span>
+          <span class="tag tag-${idea.phase}">${formatPhase(idea.phase)}</span>
+          ${idea.times_done > 0 ? `<span class="done-badge">done ${idea.times_done}×</span>` : ''}
+          ${idea.is_recurring ? '<span class="done-badge">↻ recurring</span>' : ''}
+        </div>
+        ${inCycle
+          ? '<span class="in-cycle-badge">✓ in cycle</span>'
+          : `<div class="idea-actions">
+              <button class="idea-action-btn add" onclick="addIdeaToCycle(${idea.id}, event)" title="Add to schedule">+</button>
+              <button class="idea-action-btn cross" onclick="toggleCrossOut(${idea.id}, event)" title="${crossed ? 'Restore' : 'Cross out'}">${crossed ? '↩' : '✕'}</button>
+              <button class="idea-action-btn del" onclick="deleteIdea(${idea.id}, event)" title="Delete from bank">🗑</button>
+            </div>`
+        }
+      `;
+      list.appendChild(div);
+    });
   });
 }
 
@@ -819,6 +875,32 @@ function toggleCrossOut(ideaId, e) {
   }
   localStorage.setItem('crossedOutIds', JSON.stringify([...crossedOutIds]));
   renderIdeas();
+}
+
+async function addAllPhase(phase, btn) {
+  if (!currentCycleId) { showToast('Select an auction cycle first', 'error'); return; }
+  // Collect all addable idea IDs for this phase (not in cycle, not crossed out)
+  const toAdd = allIdeas.filter(i =>
+    (i.phase === phase) &&
+    !cycleTaskIdeaIds.has(i.id) &&
+    !crossedOutIds.has(i.id) &&
+    (currentFilter === 'all' || i.category === currentFilter)
+  ).map(i => i.id);
+  if (toAdd.length === 0) { showToast('All ideas in this phase are already in the schedule', 'info'); return; }
+  btn.classList.add('loading');
+  btn.textContent = 'Adding...';
+  const res = await fetch(`/api/cycles/${currentCycleId}/add-ideas`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ idea_ids: toAdd, override_phase: phase }), credentials: 'include'
+  });
+  if (res.ok) {
+    await loadCycle(currentCycleId);
+    showToast(`Added ${toAdd.length} tasks to schedule`, 'success');
+  } else {
+    btn.classList.remove('loading');
+    btn.textContent = `+ Add All (${toAdd.length})`;
+    showToast('Error adding tasks', 'error');
+  }
 }
 
 async function deleteIdea(ideaId, e) {
