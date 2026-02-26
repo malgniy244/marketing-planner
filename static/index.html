@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Marketing Auction Planner · Stack's Bowers</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #161616;
+  --surface2: #1c1c1c;
+  --border: #2a2a2a;
+  --border2: #333;
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: rgba(201,168,76,0.15);
+  --text: #e8e4dc;
+  --muted: #888;
+  --muted2: #666;
+  --card-bg: #131313;
+  --green: #4caf7d;
+  --green-dim: rgba(76,175,125,0.15);
+  --red: #e05252;
+  --red-dim: rgba(224,82,82,0.15);
+  --blue: #5b9bd5;
+  --blue-dim: rgba(91,155,213,0.15);
+  --orange: #e0943a;
+  --orange-dim: rgba(224,148,58,0.15);
+  --purple: #a07cd5;
+  --purple-dim: rgba(160,124,213,0.15);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 100;
+}
+.login-box {
+  border: 1px solid var(--border);
+  padding: 56px 48px; width: 360px;
+  position: relative; background: var(--surface);
+}
+.login-box::before {
+  content: ''; position: absolute;
+  top: -1px; left: 24px; right: 24px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.login-title { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 300; letter-spacing: 0.08em; color: var(--text); margin-bottom: 6px; text-align: center; }
+.login-sub { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; text-align: center; margin-bottom: 40px; }
+.login-label { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: block; }
+.login-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem; padding: 12px 14px; outline: none; letter-spacing: 0.1em; transition: border-color 0.2s; }
+.login-input:focus { border-color: var(--gold); }
+.login-btn { width: 100%; margin-top: 20px; padding: 13px; background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.login-btn:hover { background: var(--gold); color: var(--bg); }
+.login-error { margin-top: 14px; font-size: 0.65rem; color: var(--red); letter-spacing: 0.1em; text-align: center; min-height: 16px; }
+
+/* ── APP SHELL ── */
+#app { display: none; position: relative; z-index: 1; min-height: 100vh; }
+
+/* ── HEADER ── */
+.app-header {
+  padding: 32px 48px 28px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 50;
+}
+.header-left .eyebrow { font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.header-left h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; font-weight: 300; letter-spacing: 0.04em; line-height: 1; }
+.header-left h1 span { color: var(--gold); }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.cycle-selector { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.72rem; padding: 10px 14px; outline: none; cursor: pointer; letter-spacing: 0.05em; transition: border-color 0.2s; }
+.cycle-selector:focus { border-color: var(--gold); }
+.btn-new-cycle { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; padding: 10px 16px; cursor: pointer; transition: all 0.2s; }
+.btn-new-cycle:hover { border-color: var(--gold); color: var(--gold); }
+.logout-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; padding: 10px 16px; cursor: pointer; transition: all 0.2s; }
+.logout-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.stat-item {
+  flex: 1; padding: 18px 24px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+.stat-item:last-child { border-right: none; }
+.stat-val { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 300; color: var(--gold); line-height: 1; }
+.stat-lbl { font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+/* ── MAIN LAYOUT ── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: calc(100vh - 160px);
+}
+
+/* ── IDEAS PANEL (left) ── */
+.ideas-panel {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: sticky; top: 113px;
+  height: calc(100vh - 113px);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-title { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.panel-title span { color: var(--gold); }
+.search-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.72rem; padding: 9px 12px; outline: none; transition: border-color 0.2s; margin-bottom: 10px; }
+.search-input:focus { border-color: var(--gold); }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 10px; cursor: pointer; transition: all 0.2s; }
+.filter-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+.ideas-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.ideas-list::-webkit-scrollbar { width: 4px; }
+.ideas-list::-webkit-scrollbar-track { background: transparent; }
+.ideas-list::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.idea-item {
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(42,42,42,0.5);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.idea-item:hover { background: rgba(201,168,76,0.05); }
+.idea-item.in-cycle { opacity: 0.45; cursor: default; }
+.idea-item.in-cycle:hover { background: transparent; }
+.idea-title { font-size: 0.72rem; color: var(--text); line-height: 1.4; margin-bottom: 4px; }
+.idea-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tag { font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border: 1px solid; }
+.tag-eblast { color: #5b9bd5; border-color: rgba(91,155,213,0.4); background: rgba(91,155,213,0.08); }
+.tag-social { color: #a07cd5; border-color: rgba(160,124,213,0.4); background: rgba(160,124,213,0.08); }
+.tag-print { color: #e0943a; border-color: rgba(224,148,58,0.4); background: rgba(224,148,58,0.08); }
+.tag-video { color: #e05252; border-color: rgba(224,82,82,0.4); background: rgba(224,82,82,0.08); }
+.tag-logistics { color: #4caf7d; border-color: rgba(76,175,125,0.4); background: rgba(76,175,125,0.08); }
+.tag-digital { color: #5b9bd5; border-color: rgba(91,155,213,0.3); background: rgba(91,155,213,0.06); }
+.tag-admin { color: var(--muted); border-color: var(--border); }
+.tag-other { color: var(--muted); border-color: var(--border); }
+.tag-pre { color: var(--gold); border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.06); }
+.tag-on { color: var(--green); border-color: rgba(76,175,125,0.3); background: rgba(76,175,125,0.06); }
+.tag-post { color: #5b9bd5; border-color: rgba(91,155,213,0.3); background: rgba(91,155,213,0.06); }
+.tag-recurring { color: var(--muted); border-color: var(--border); }
+.done-badge { font-size: 0.5rem; color: var(--muted); letter-spacing: 0.05em; }
+.add-to-cycle-btn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: 1px solid var(--gold); color: var(--gold);
+  font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.15em;
+  text-transform: uppercase; padding: 4px 10px; cursor: pointer;
+  opacity: 0; transition: opacity 0.2s, background 0.2s;
+}
+.idea-item:hover .add-to-cycle-btn { opacity: 1; }
+.add-to-cycle-btn:hover { background: var(--gold); color: var(--bg); }
+.in-cycle-badge { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.5rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ── CYCLE BOARD (right) ── */
+.cycle-board {
+  padding: 32px 40px;
+  overflow-y: auto;
+}
+.board-section { margin-bottom: 40px; }
+.board-section-header {
+  font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 16px;
+}
+.board-section-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.board-section-header .section-count { color: var(--gold); }
+
+.task-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.task-card:hover { border-color: var(--border2); }
+.task-card.decision-do { border-left: 3px solid var(--green); }
+.task-card.decision-skip { border-left: 3px solid var(--red); opacity: 0.6; }
+.task-card.decision-defer { border-left: 3px solid var(--orange); }
+.task-card.decision-undecided { border-left: 3px solid var(--border2); }
+.task-card.status-completed { border-left: 3px solid var(--gold); }
+
+.task-card-main {
+  padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  cursor: pointer;
+}
+.task-card-body { flex: 1; min-width: 0; }
+.task-card-title { font-size: 0.78rem; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+.task-card-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.task-due { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.05em; }
+.task-assignee { font-size: 0.58rem; color: var(--muted); }
+
+.task-card-actions {
+  display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+}
+.decision-btn {
+  font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 5px 10px; border: 1px solid; cursor: pointer;
+  transition: all 0.15s; background: transparent;
+}
+.decision-btn.do { color: var(--green); border-color: rgba(76,175,125,0.4); }
+.decision-btn.do.active, .decision-btn.do:hover { background: var(--green-dim); border-color: var(--green); }
+.decision-btn.skip { color: var(--red); border-color: rgba(224,82,82,0.4); }
+.decision-btn.skip.active, .decision-btn.skip:hover { background: var(--red-dim); border-color: var(--red); }
+.decision-btn.defer { color: var(--orange); border-color: rgba(224,148,58,0.4); }
+.decision-btn.defer.active, .decision-btn.defer:hover { background: var(--orange-dim); border-color: var(--orange); }
+.task-expand-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 4px; transition: color 0.2s; }
+.task-expand-btn:hover { color: var(--gold); }
+.task-delete-btn { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 0.65rem; padding: 4px; transition: color 0.2s; }
+.task-delete-btn:hover { color: var(--red); }
+
+/* Task expanded detail */
+.task-detail {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.task-detail.open { display: block; }
+.detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.detail-field label { font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.detail-field input, .detail-field select, .detail-field textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.7rem;
+  padding: 8px 10px; outline: none; transition: border-color 0.2s; resize: vertical;
+}
+.detail-field input:focus, .detail-field select, .detail-field textarea:focus { border-color: var(--gold); }
+.detail-field select { cursor: pointer; }
+.detail-field select option { background: var(--surface); }
+.repeat-flag-row { margin-top: 12px; }
+.repeat-flag-row label { font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px; }
+.repeat-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.repeat-btn {
+  font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 5px 12px; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; background: transparent; transition: all 0.15s;
+}
+.repeat-btn:hover { border-color: var(--gold); color: var(--gold); }
+.repeat-btn.active-always { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.repeat-btn.active-never { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+.repeat-btn.active-case { border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
+.save-task-btn {
+  margin-top: 12px; padding: 8px 18px; background: transparent;
+  border: 1px solid var(--gold); color: var(--gold);
+  font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em;
+  text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+}
+.save-task-btn:hover { background: var(--gold); color: var(--bg); }
+
+/* Comments */
+.comments-section { margin-top: 16px; }
+.comments-title { font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.comment-item { padding: 8px 10px; background: var(--surface2); border-left: 2px solid var(--border2); margin-bottom: 6px; }
+.comment-author { font-size: 0.55rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 3px; }
+.comment-text { font-size: 0.68rem; color: var(--text); line-height: 1.5; }
+.comment-time { font-size: 0.5rem; color: var(--muted2); margin-top: 3px; }
+.comment-input-row { display: flex; gap: 8px; margin-top: 8px; }
+.comment-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 8px 10px; outline: none; transition: border-color 0.2s; }
+.comment-input:focus { border-color: var(--gold); }
+.comment-submit { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.comment-submit:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 80px 40px; }
+.empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 16px; opacity: 0.4; }
+.empty-state p { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.05em; line-height: 1.8; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); width: 480px; max-width: 95vw; position: relative; }
+.modal::before { content: ''; position: absolute; top: -1px; left: 24px; right: 24px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.modal-header { padding: 28px 32px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-title { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 300; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
+.modal-close:hover { color: var(--gold); }
+.modal-body { padding: 24px 32px 32px; }
+.modal-field { margin-bottom: 18px; }
+.modal-field label { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px; }
+.modal-field input, .modal-field select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.78rem;
+  padding: 11px 13px; outline: none; transition: border-color 0.2s;
+}
+.modal-field input:focus, .modal-field select:focus { border-color: var(--gold); }
+.modal-field select option { background: var(--surface); }
+.modal-btn { width: 100%; padding: 13px; background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+.modal-btn:hover { background: var(--gold); color: var(--bg); }
+
+/* ── ADD CUSTOM TASK ── */
+.add-custom-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border: 1px dashed var(--border);
+  color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  background: transparent; width: 100%; transition: all 0.2s; margin-top: 4px;
+}
+.add-custom-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 32px; right: 32px;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 12px 20px; font-size: 0.65rem; letter-spacing: 0.1em;
+  color: var(--text); z-index: 300; opacity: 0;
+  transform: translateY(8px); transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+/* ── SCROLLBAR ── */
+.cycle-board::-webkit-scrollbar { width: 4px; }
+.cycle-board::-webkit-scrollbar-track { background: transparent; }
+.cycle-board::-webkit-scrollbar-thumb { background: var(--border2); }
+
+@media (max-width: 900px) {
+  .main-layout { grid-template-columns: 1fr; }
+  .ideas-panel { position: static; height: auto; max-height: 400px; }
+  .app-header { padding: 20px 24px; }
+  .cycle-board { padding: 20px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <p class="login-title">Marketing<br>Planner</p>
+    <p class="login-sub">Stack's Bowers &amp; Ponterio · HK</p>
+    <label class="login-label" for="pwd">Access Code</label>
+    <input class="login-input" type="password" id="pwd" placeholder="••••••••" autocomplete="current-password"/>
+    <button class="login-btn" onclick="doLogin()">Enter</button>
+    <p class="login-error" id="login-error"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-left">
+      <p class="eyebrow">Stack's Bowers &amp; Ponterio · HK Office</p>
+      <h1>Marketing <span>Planner</span></h1>
+    </div>
+    <div class="header-right">
+      <select class="cycle-selector" id="cycle-select" onchange="loadCycle(this.value)">
+        <option value="">— Select Auction Cycle —</option>
+      </select>
+      <button class="btn-new-cycle" onclick="openNewCycleModal()">+ New Cycle</button>
+      <button class="logout-btn" onclick="doLogout()">Log out</button>
+    </div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat-item"><div class="stat-val" id="stat-confirmed">0</div><div class="stat-lbl">Confirmed</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-undecided">0</div><div class="stat-lbl">To Decide</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-completed">0</div><div class="stat-lbl">Completed</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-skipped">0</div><div class="stat-lbl">Skipped</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Total Tasks</div></div>
+  </div>
+
+  <div class="main-layout">
+    <!-- IDEAS PANEL -->
+    <aside class="ideas-panel">
+      <div class="panel-header">
+        <div class="panel-title">Ideas Bank <span id="ideas-count">0</span></div>
+        <input class="search-input" type="text" id="ideas-search" placeholder="Search ideas..." oninput="filterIdeas()"/>
+        <div class="filter-row" id="filter-row">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+          <button class="filter-btn" data-filter="eblast" onclick="setFilter('eblast', this)">Eblast</button>
+          <button class="filter-btn" data-filter="social_media" onclick="setFilter('social_media', this)">Social</button>
+          <button class="filter-btn" data-filter="print" onclick="setFilter('print', this)">Print</button>
+          <button class="filter-btn" data-filter="video" onclick="setFilter('video', this)">Video</button>
+          <button class="filter-btn" data-filter="logistics" onclick="setFilter('logistics', this)">Logistics</button>
+          <button class="filter-btn" data-filter="digital" onclick="setFilter('digital', this)">Digital</button>
+          <button class="filter-btn" data-filter="admin" onclick="setFilter('admin', this)">Admin</button>
+        </div>
+      </div>
+      <div class="ideas-list" id="ideas-list"></div>
+    </aside>
+
+    <!-- CYCLE BOARD -->
+    <main class="cycle-board" id="cycle-board">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>Select an auction cycle from the top<br>to start planning marketing tasks.</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- NEW CYCLE MODAL -->
+<div class="modal-overlay" id="new-cycle-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">New Auction Cycle</span>
+      <button class="modal-close" onclick="closeModal('new-cycle-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Cycle Name (e.g. APR HK26)</label>
+        <input type="text" id="new-cycle-name" placeholder="APR HK26"/>
+      </div>
+      <div class="modal-field">
+        <label>Auction Start Date</label>
+        <input type="date" id="new-cycle-start"/>
+      </div>
+      <div class="modal-field">
+        <label>Auction End Date</label>
+        <input type="date" id="new-cycle-end"/>
+      </div>
+      <div class="modal-field">
+        <label>Location</label>
+        <input type="text" id="new-cycle-location" value="Hong Kong"/>
+      </div>
+      <button class="modal-btn" onclick="createCycle()">Create Cycle</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOM TASK MODAL -->
+<div class="modal-overlay" id="custom-task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Custom Task</span>
+      <button class="modal-close" onclick="closeModal('custom-task-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Task Title</label>
+        <input type="text" id="custom-task-title" placeholder="e.g. Special VIP invitation card"/>
+      </div>
+      <div class="modal-field">
+        <label>Category</label>
+        <select id="custom-task-category">
+          <option value="eblast">Eblast</option>
+          <option value="social_media">Social Media</option>
+          <option value="print">Print</option>
+          <option value="video">Video</option>
+          <option value="logistics">Logistics</option>
+          <option value="digital">Digital</option>
+          <option value="admin">Admin</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Phase</label>
+        <select id="custom-task-phase">
+          <option value="pre_auction">Pre-Auction</option>
+          <option value="on_show">On Show</option>
+          <option value="post_auction">Post-Auction</option>
+          <option value="recurring">Recurring</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Due Date (optional)</label>
+        <input type="date" id="custom-task-due"/>
+      </div>
+      <button class="modal-btn" onclick="addCustomTask()">Add to Cycle</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let currentCycleId = null;
+let allIdeas = [];
+let cycleTasks = [];
+let currentFilter = 'all';
+let cycleTaskIdeaIds = new Set();
+
+// ── Auth ───────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const pwd = document.getElementById('pwd').value;
+  const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({password: pwd}), credentials: 'include' });
+  if (res.ok) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('login-error').textContent = 'Incorrect access code.';
+    document.getElementById('pwd').value = '';
+  }
+}
+
+document.getElementById('pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pwd').value = '';
+}
+
+async function checkAuth() {
+  const res = await fetch('/api/check-auth', { credentials: 'include' });
+  const data = await res.json();
+  if (data.authenticated) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+async function initApp() {
+  await loadCycles();
+  await loadIdeas();
+}
+
+// ── Cycles ─────────────────────────────────────────────────────────────────────
+async function loadCycles() {
+  const res = await fetch('/api/cycles', { credentials: 'include' });
+  const cycles = await res.json();
+  const sel = document.getElementById('cycle-select');
+  sel.innerHTML = '<option value="">— Select Auction Cycle —</option>';
+  cycles.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + (c.auction_date_start ? ' · ' + formatDate(c.auction_date_start) : '');
+    sel.appendChild(opt);
+  });
+  // Auto-select APR HK26
+  const aprOpt = Array.from(sel.options).find(o => o.textContent.includes('APR HK26'));
+  if (aprOpt) { sel.value = aprOpt.value; loadCycle(aprOpt.value); }
+}
+
+async function loadCycle(cycleId) {
+  if (!cycleId) { currentCycleId = null; renderEmptyBoard(); return; }
+  currentCycleId = parseInt(cycleId);
+  const [tasksRes, statsRes] = await Promise.all([
+    fetch(`/api/cycles/${cycleId}/tasks`, { credentials: 'include' }),
+    fetch(`/api/cycles/${cycleId}/stats`, { credentials: 'include' })
+  ]);
+  cycleTasks = await tasksRes.json();
+  const stats = await statsRes.json();
+  cycleTaskIdeaIds = new Set(cycleTasks.filter(t => t.idea_id).map(t => t.idea_id));
+  renderStats(stats);
+  renderBoard();
+  renderIdeas(); // refresh in-cycle badges
+}
+
+function renderStats(stats) {
+  document.getElementById('stats-bar').style.display = 'flex';
+  document.getElementById('stat-confirmed').textContent = stats.confirmed || 0;
+  document.getElementById('stat-undecided').textContent = stats.undecided || 0;
+  document.getElementById('stat-completed').textContent = stats.completed || 0;
+  document.getElementById('stat-skipped').textContent = stats.skipped || 0;
+  document.getElementById('stat-total').textContent = stats.total || 0;
+}
+
+async function createCycle() {
+  const name = document.getElementById('new-cycle-name').value.trim();
+  if (!name) { showToast('Please enter a cycle name', 'error'); return; }
+  const body = {
+    name,
+    auction_date_start: document.getElementById('new-cycle-start').value || null,
+    auction_date_end: document.getElementById('new-cycle-end').value || null,
+    location: document.getElementById('new-cycle-location').value || 'Hong Kong'
+  };
+  const res = await fetch('/api/cycles', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body), credentials: 'include' });
+  if (res.ok) {
+    closeModal('new-cycle-modal');
+    await loadCycles();
+    showToast('Cycle created', 'success');
+  } else { showToast('Error creating cycle', 'error'); }
+}
+
+// ── Ideas ──────────────────────────────────────────────────────────────────────
+async function loadIdeas() {
+  const res = await fetch('/api/ideas', { credentials: 'include' });
+  allIdeas = await res.json();
+  renderIdeas();
+}
+
+function renderIdeas() {
+  const search = document.getElementById('ideas-search').value.toLowerCase();
+  const filtered = allIdeas.filter(idea => {
+    const matchFilter = currentFilter === 'all' || idea.category === currentFilter;
+    const matchSearch = !search || idea.title.toLowerCase().includes(search) || (idea.description || '').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+  document.getElementById('ideas-count').textContent = filtered.length;
+  const list = document.getElementById('ideas-list');
+  list.innerHTML = '';
+  filtered.forEach(idea => {
+    const inCycle = cycleTaskIdeaIds.has(idea.id);
+    const div = document.createElement('div');
+    div.className = 'idea-item' + (inCycle ? ' in-cycle' : '');
+    div.innerHTML = `
+      <div class="idea-title">${idea.title}</div>
+      <div class="idea-meta">
+        <span class="tag tag-${idea.category}">${formatCategory(idea.category)}</span>
+        <span class="tag tag-${idea.phase}">${formatPhase(idea.phase)}</span>
+        ${idea.times_done > 0 ? `<span class="done-badge">done ${idea.times_done}×</span>` : ''}
+        ${idea.is_recurring ? '<span class="done-badge">↻ recurring</span>' : ''}
+      </div>
+      ${inCycle
+        ? '<span class="in-cycle-badge">✓ in cycle</span>'
+        : `<button class="add-to-cycle-btn" onclick="addIdeaToCycle(${idea.id}, event)">+ Add</button>`
+      }
+    `;
+    list.appendChild(div);
+  });
+}
+
+function filterIdeas() { renderIdeas(); }
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderIdeas();
+}
+
+async function addIdeaToCycle(ideaId, e) {
+  e.stopPropagation();
+  if (!currentCycleId) { showToast('Select an auction cycle first', 'error'); return; }
+  const res = await fetch(`/api/cycles/${currentCycleId}/add-ideas`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ idea_ids: [ideaId] }), credentials: 'include'
+  });
+  if (res.ok) {
+    await loadCycle(currentCycleId);
+    showToast('Added to cycle', 'success');
+  } else { showToast('Error adding task', 'error'); }
+}
+
+// ── Board ──────────────────────────────────────────────────────────────────────
+const PHASES = [
+  { key: 'pre_auction', label: 'Pre-Auction' },
+  { key: 'on_show', label: 'On Show' },
+  { key: 'post_auction', label: 'Post-Auction' },
+  { key: 'recurring', label: 'Recurring' },
+];
+
+function renderEmptyBoard() {
+  document.getElementById('stats-bar').style.display = 'none';
+  document.getElementById('cycle-board').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>Select an auction cycle from the top<br>to start planning marketing tasks.</p>
+    </div>`;
+}
+
+function renderBoard() {
+  const board = document.getElementById('cycle-board');
+  board.innerHTML = '';
+  PHASES.forEach(phase => {
+    const tasks = cycleTasks.filter(t => t.phase === phase.key);
+    const section = document.createElement('div');
+    section.className = 'board-section';
+    section.innerHTML = `
+      <div class="board-section-header">
+        ${phase.label} <span class="section-count">${tasks.length}</span>
+      </div>
+      <div id="phase-${phase.key}"></div>
+      <button class="add-custom-btn" onclick="openCustomTaskModal('${phase.key}')">+ Add custom task</button>
+    `;
+    board.appendChild(section);
+    const container = section.querySelector(`#phase-${phase.key}`);
+    if (tasks.length === 0) {
+      container.innerHTML = `<div style="padding:12px 0; font-size:0.65rem; color:var(--muted2); letter-spacing:0.05em;">No tasks yet — add from the ideas bank or create a custom task.</div>`;
+    } else {
+      tasks.forEach(task => container.appendChild(buildTaskCard(task)));
+    }
+  });
+}
+
+function buildTaskCard(task) {
+  const div = document.createElement('div');
+  div.className = `task-card decision-${task.decision} ${task.status === 'completed' ? 'status-completed' : ''}`;
+  div.id = `task-${task.id}`;
+  div.innerHTML = `
+    <div class="task-card-main" onclick="toggleDetail(${task.id})">
+      <div class="task-card-body">
+        <div class="task-card-title">${task.title}</div>
+        <div class="task-card-meta">
+          <span class="tag tag-${task.category}">${formatCategory(task.category)}</span>
+          ${task.due_date ? `<span class="task-due">Due ${formatDate(task.due_date)}</span>` : ''}
+          ${task.assigned_to ? `<span class="task-assignee">· ${task.assigned_to}</span>` : ''}
+          ${task.idea_times_done > 0 ? `<span class="done-badge">done ${task.idea_times_done}×</span>` : ''}
+        </div>
+      </div>
+      <div class="task-card-actions" onclick="event.stopPropagation()">
+        <button class="decision-btn do ${task.decision==='do'?'active':''}" onclick="setDecision(${task.id},'do')">Do</button>
+        <button class="decision-btn skip ${task.decision==='skip'?'active':''}" onclick="setDecision(${task.id},'skip')">Skip</button>
+        <button class="decision-btn defer ${task.decision==='defer'?'active':''}" onclick="setDecision(${task.id},'defer')">Defer</button>
+        <button class="task-expand-btn" onclick="toggleDetail(${task.id})">▾</button>
+        <button class="task-delete-btn" onclick="deleteTask(${task.id})" title="Remove from cycle">✕</button>
+      </div>
+    </div>
+    <div class="task-detail" id="detail-${task.id}">
+      <div class="detail-row">
+        <div class="detail-field">
+          <label>Due Date</label>
+          <input type="date" id="due-${task.id}" value="${task.due_date || ''}"/>
+        </div>
+        <div class="detail-field">
+          <label>Assigned To</label>
+          <input type="text" id="assignee-${task.id}" value="${task.assigned_to || 'Ceci Yeung'}"/>
+        </div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-field">
+          <label>Status</label>
+          <select id="status-${task.id}" onchange="quickSave(${task.id})">
+            <option value="idea" ${task.status==='idea'?'selected':''}>Idea</option>
+            <option value="confirmed" ${task.status==='confirmed'?'selected':''}>Confirmed</option>
+            <option value="in_progress" ${task.status==='in_progress'?'selected':''}>In Progress</option>
+            <option value="completed" ${task.status==='completed'?'selected':''}>Completed</option>
+            <option value="skipped" ${task.status==='skipped'?'selected':''}>Skipped</option>
+          </select>
+        </div>
+        <div class="detail-field">
+          <label>Phase</label>
+          <select id="phase-sel-${task.id}">
+            <option value="pre_auction" ${task.phase==='pre_auction'?'selected':''}>Pre-Auction</option>
+            <option value="on_show" ${task.phase==='on_show'?'selected':''}>On Show</option>
+            <option value="post_auction" ${task.phase==='post_auction'?'selected':''}>Post-Auction</option>
+            <option value="recurring" ${task.phase==='recurring'?'selected':''}>Recurring</option>
+          </select>
+        </div>
+      </div>
+      <div class="detail-field" style="margin-top:12px">
+        <label>Notes</label>
+        <textarea id="notes-${task.id}" rows="2" placeholder="Add notes...">${task.notes || ''}</textarea>
+      </div>
+      <div class="repeat-flag-row">
+        <label>Next Cycle: Do Again?</label>
+        <div class="repeat-btns">
+          <button class="repeat-btn ${task.repeat_flag==='always_do'?'active-always':''}" onclick="setRepeat(${task.id},'always_do')">✓ Always Do</button>
+          <button class="repeat-btn ${task.repeat_flag==='never_again'?'active-never':''}" onclick="setRepeat(${task.id},'never_again')">✕ Never Again</button>
+          <button class="repeat-btn ${task.repeat_flag==='case_by_case'?'active-case':''}" onclick="setRepeat(${task.id},'case_by_case')">~ Case by Case</button>
+        </div>
+      </div>
+      <button class="save-task-btn" onclick="saveTask(${task.id})">Save Changes</button>
+      <div class="comments-section">
+        <div class="comments-title">Comments</div>
+        <div id="comments-${task.id}"></div>
+        <div class="comment-input-row">
+          <input class="comment-input" type="text" id="comment-input-${task.id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter') submitComment(${task.id})"/>
+          <button class="comment-submit" onclick="submitComment(${task.id})">Post</button>
+        </div>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function toggleDetail(taskId) {
+  const detail = document.getElementById(`detail-${taskId}`);
+  const isOpen = detail.classList.contains('open');
+  detail.classList.toggle('open', !isOpen);
+  if (!isOpen) loadComments(taskId);
+}
+
+async function setDecision(taskId, decision) {
+  const res = await fetch(`/api/tasks/${taskId}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ decision }), credentials: 'include'
+  });
+  if (res.ok) {
+    const task = cycleTasks.find(t => t.id === taskId);
+    if (task) task.decision = decision;
+    const card = document.getElementById(`task-${taskId}`);
+    card.className = `task-card decision-${decision} ${task.status === 'completed' ? 'status-completed' : ''}`;
+    card.querySelectorAll('.decision-btn').forEach(btn => btn.classList.remove('active'));
+    card.querySelector(`.decision-btn.${decision}`).classList.add('active');
+    await refreshStats();
+  }
+}
+
+async function setRepeat(taskId, flag) {
+  const res = await fetch(`/api/tasks/${taskId}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ repeat_flag: flag }), credentials: 'include'
+  });
+  if (res.ok) {
+    const task = cycleTasks.find(t => t.id === taskId);
+    if (task) task.repeat_flag = flag;
+    const btns = document.querySelectorAll(`#task-${taskId} .repeat-btn`);
+    btns.forEach(b => { b.className = 'repeat-btn'; });
+    const flagMap = { always_do: 'active-always', never_again: 'active-never', case_by_case: 'active-case' };
+    if (flagMap[flag]) {
+      const btn = Array.from(btns).find(b => b.textContent.toLowerCase().includes(flag.replace(/_/g,' ').replace('always do','always').replace('never again','never').replace('case by case','case')));
+      if (btn) btn.classList.add(flagMap[flag]);
+    }
+    showToast('Saved', 'success');
+  }
+}
+
+async function quickSave(taskId) {
+  const status = document.getElementById(`status-${taskId}`).value;
+  await fetch(`/api/tasks/${taskId}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ status }), credentials: 'include'
+  });
+  await refreshStats();
+}
+
+async function saveTask(taskId) {
+  const data = {
+    due_date: document.getElementById(`due-${taskId}`).value || null,
+    assigned_to: document.getElementById(`assignee-${taskId}`).value,
+    status: document.getElementById(`status-${taskId}`).value,
+    phase: document.getElementById(`phase-sel-${taskId}`).value,
+    notes: document.getElementById(`notes-${taskId}`).value,
+  };
+  const res = await fetch(`/api/tasks/${taskId}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data), credentials: 'include'
+  });
+  if (res.ok) {
+    showToast('Saved', 'success');
+    await loadCycle(currentCycleId);
+  } else { showToast('Error saving', 'error'); }
+}
+
+async function deleteTask(taskId) {
+  if (!confirm('Remove this task from the cycle?')) return;
+  const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE', credentials: 'include' });
+  if (res.ok) {
+    await loadCycle(currentCycleId);
+    showToast('Removed', 'success');
+  }
+}
+
+async function refreshStats() {
+  if (!currentCycleId) return;
+  const res = await fetch(`/api/cycles/${currentCycleId}/stats`, { credentials: 'include' });
+  const stats = await res.json();
+  renderStats(stats);
+}
+
+// ── Custom Task ────────────────────────────────────────────────────────────────
+let pendingPhase = 'pre_auction';
+function openCustomTaskModal(phase) {
+  pendingPhase = phase || 'pre_auction';
+  document.getElementById('custom-task-phase').value = pendingPhase;
+  document.getElementById('custom-task-title').value = '';
+  document.getElementById('custom-task-due').value = '';
+  openModal('custom-task-modal');
+}
+
+async function addCustomTask() {
+  if (!currentCycleId) { showToast('Select a cycle first', 'error'); return; }
+  const title = document.getElementById('custom-task-title').value.trim();
+  if (!title) { showToast('Please enter a title', 'error'); return; }
+  const body = {
+    title,
+    category: document.getElementById('custom-task-category').value,
+    phase: document.getElementById('custom-task-phase').value,
+    due_date: document.getElementById('custom-task-due').value || null,
+    decision: 'do',
+    status: 'confirmed'
+  };
+  const res = await fetch(`/api/cycles/${currentCycleId}/tasks`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body), credentials: 'include'
+  });
+  if (res.ok) {
+    closeModal('custom-task-modal');
+    await loadCycle(currentCycleId);
+    showToast('Task added', 'success');
+  } else { showToast('Error adding task', 'error'); }
+}
+
+// ── Comments ───────────────────────────────────────────────────────────────────
+async function loadComments(taskId) {
+  const res = await fetch(`/api/tasks/${taskId}/comments`, { credentials: 'include' });
+  const comments = await res.json();
+  const container = document.getElementById(`comments-${taskId}`);
+  container.innerHTML = '';
+  comments.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.innerHTML = `
+      <div class="comment-author">${c.author}</div>
+      <div class="comment-text">${c.comment}</div>
+      <div class="comment-time">${formatDateTime(c.created_at)}</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function submitComment(taskId) {
+  const input = document.getElementById(`comment-input-${taskId}`);
+  const comment = input.value.trim();
+  if (!comment) return;
+  const res = await fetch(`/api/tasks/${taskId}/comments`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ author: 'Team', comment }), credentials: 'include'
+  });
+  if (res.ok) {
+    input.value = '';
+    await loadComments(taskId);
+  }
+}
+
+// ── Modals ─────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openNewCycleModal() { openModal('new-cycle-modal'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function formatCategory(cat) {
+  const map = { eblast: 'Eblast', social_media: 'Social', print: 'Print', video: 'Video', logistics: 'Logistics', digital: 'Digital', admin: 'Admin', other: 'Other' };
+  return map[cat] || cat;
+}
+function formatPhase(phase) {
+  const map = { pre_auction: 'Pre', on_show: 'On Show', post_auction: 'Post', recurring: 'Recurring' };
+  return map[phase] || phase;
+}
+function formatDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-HK', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function formatDateTime(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-HK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+checkAuth();
+</script>
+</body>
+</html>
